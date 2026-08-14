@@ -7,120 +7,183 @@ export default function Home() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [hasSearched, setHasSearched] = useState(false);
-  const [expandedId, setExpandedId] = useState(null);
 
-  // =========================================================
-  // DATA
-  // =========================================================
-
+  // Pastikan data selalu berupa array
   const data = Array.isArray(faskesData) ? faskesData : [];
 
-  // =========================================================
-  // SEARCH
-  // =========================================================
+  /*
+   * Membersihkan text untuk pencarian
+   */
+  const normalize = (value) => {
+    return String(value || '')
+      .toLowerCase()
+      .trim();
+  };
 
+  /*
+   * Format koordinat
+   */
+  const formatCoordinate = (value) => {
+    if (value === null || value === undefined || value === '') {
+      return '';
+    }
+
+    const number = Number(value);
+
+    if (Number.isNaN(number)) {
+      return String(value);
+    }
+
+    return number.toFixed(6);
+  };
+
+  /*
+   * Membuat URL Google Maps.
+   *
+   * Kita tidak hanya mengirim koordinat.
+   * Nama + wilayah + koordinat memberikan konteks
+   * tambahan kepada Google Maps.
+   */
+  const getGoogleMapsUrl = (item) => {
+    const nama = item.nama || item.name || '';
+    const kota = item.kota || item.city || '';
+    const provinsi = item.provinsi || item.province || '';
+    const alamat = item.alamat || item.address || '';
+
+    const latitude = item.latitude;
+    const longitude = item.longitude;
+
+    const locationParts = [
+      nama,
+      alamat,
+      kota,
+      provinsi,
+      'Indonesia',
+    ].filter(Boolean);
+
+    let searchQuery = locationParts.join(', ');
+
+    /*
+     * Kalau koordinat tersedia, tambahkan ke query.
+     */
+    if (
+      latitude !== undefined &&
+      latitude !== null &&
+      longitude !== undefined &&
+      longitude !== null
+    ) {
+      searchQuery += ` ${latitude},${longitude}`;
+    }
+
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+      searchQuery
+    )}`;
+  };
+
+  /*
+   * URL Google Maps untuk navigasi / directions.
+   */
+  const getDirectionsUrl = (item) => {
+    const nama = item.nama || item.name || '';
+    const kota = item.kota || item.city || '';
+    const provinsi = item.provinsi || item.province || '';
+
+    const latitude = item.latitude;
+    const longitude = item.longitude;
+
+    let destination = `${nama}, ${kota}, ${provinsi}, Indonesia`;
+
+    if (
+      latitude !== undefined &&
+      latitude !== null &&
+      longitude !== undefined &&
+      longitude !== null
+    ) {
+      destination = `${latitude},${longitude}`;
+    }
+
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+      destination
+    )}`;
+  };
+
+  /*
+   * Pencarian
+   */
   const handleSearch = (e) => {
     e.preventDefault();
 
-    const q = query.trim().toLowerCase();
+    const q = normalize(query);
 
     if (!q) {
       setResults([]);
       setHasSearched(false);
-      setExpandedId(null);
       return;
     }
 
     const filtered = data.filter((item) => {
-      const searchable = [
-        item.nama,
-        item.tipe,
-        item.kota,
-        item.provinsi,
-        item.alamat,
-        item.telepon,
-        item.website,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
+      const nama = normalize(item.nama || item.name);
+      const tipe = normalize(item.tipe || item.type);
+      const kota = normalize(item.kota || item.city);
+      const provinsi = normalize(item.provinsi || item.province);
+      const alamat = normalize(item.alamat || item.address);
+      const telepon = normalize(item.telepon || item.phone);
+      const website = normalize(item.website || item.url);
 
-      return searchable.includes(q);
+      return (
+        nama.includes(q) ||
+        tipe.includes(q) ||
+        kota.includes(q) ||
+        provinsi.includes(q) ||
+        alamat.includes(q) ||
+        telepon.includes(q) ||
+        website.includes(q)
+      );
     });
 
     setResults(filtered);
     setHasSearched(true);
-    setExpandedId(null);
   };
 
-  // =========================================================
-  // GOOGLE MAPS
-  // =========================================================
+  /*
+   * Warna badge berdasarkan tipe
+   */
+  const getTypeStyle = (tipe) => {
+    const value = normalize(tipe);
 
-  const getGoogleMapsUrl = (item) => {
-    if (
-      item.latitude === undefined ||
-      item.longitude === undefined ||
-      item.latitude === null ||
-      item.longitude === null
-    ) {
-      return null;
+    if (value.includes('rumah sakit')) {
+      return {
+        backgroundColor: '#fee2e2',
+        color: '#b91c1c',
+      };
     }
 
-    if (item.latitude === '' || item.longitude === '') {
-      return null;
+    if (value.includes('klinik')) {
+      return {
+        backgroundColor: '#dbeafe',
+        color: '#0369a1',
+      };
     }
 
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-      `${item.latitude},${item.longitude}`
-    )}`;
-  };
-
-  // =========================================================
-  // WEBSITE
-  // =========================================================
-
-  const getWebsiteUrl = (website) => {
-    if (!website) return null;
-
-    if (/^https?:\/\//i.test(website)) {
-      return website;
+    if (value.includes('dokter')) {
+      return {
+        backgroundColor: '#dcfce7',
+        color: '#15803d',
+      };
     }
 
-    return `https://${website}`;
+    if (value.includes('puskesmas')) {
+      return {
+        backgroundColor: '#ccfbf1',
+        color: '#0f766e',
+      };
+    }
+
+    return {
+      backgroundColor: '#e0f2fe',
+      color: '#0369a1',
+    };
   };
-
-  // =========================================================
-  // TELEPHONE
-  // =========================================================
-
-  const getPhoneUrl = (phone) => {
-    if (!phone) return null;
-
-    const cleaned = String(phone).replace(/[^\d+]/g, '');
-
-    return `tel:${cleaned}`;
-  };
-
-  // =========================================================
-  // FORMAT LOCATION
-  // =========================================================
-
-  const getLocation = (item) => {
-    return [item.kota, item.provinsi]
-      .filter(Boolean)
-      .join(', ');
-  };
-
-  // =========================================================
-  // RESULT LIMIT
-  // =========================================================
-
-  const visibleResults = results.slice(0, 50);
-
-  // =========================================================
-  // RENDER
-  // =========================================================
 
   return (
     <div
@@ -132,34 +195,44 @@ export default function Home() {
           'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       }}
     >
-
-      {/* =====================================================
-          HEADER
-      ===================================================== */}
-
+      {/* HEADER */}
       <header
         style={{
           backgroundColor: '#ffffff',
           borderBottom: '1px solid #e2e8f0',
-          padding: '1rem',
+          padding: '16px 20px',
         }}
       >
         <div
           style={{
-            maxWidth: '1000px',
+            maxWidth: '900px',
             margin: '0 auto',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.55rem',
+            gap: '10px',
           }}
         >
-          <span style={{ fontSize: '1.45rem' }}>🏥</span>
+          <div
+            style={{
+              width: '38px',
+              height: '38px',
+              borderRadius: '10px',
+              backgroundColor: '#0284c7',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '20px',
+            }}
+          >
+            🏥
+          </div>
 
           <div>
             <div
               style={{
-                fontWeight: '800',
-                fontSize: '1.2rem',
+                fontSize: '19px',
+                fontWeight: 800,
                 color: '#0284c7',
                 lineHeight: 1.1,
               }}
@@ -170,9 +243,9 @@ export default function Home() {
 
             <div
               style={{
-                fontSize: '0.7rem',
-                color: '#94a3b8',
-                marginTop: '0.15rem',
+                fontSize: '12px',
+                color: '#64748b',
+                marginTop: '3px',
               }}
             >
               Direktori Fasilitas Kesehatan Indonesia
@@ -181,36 +254,29 @@ export default function Home() {
         </div>
       </header>
 
-      {/* =====================================================
-          MAIN
-      ===================================================== */}
-
+      {/* MAIN */}
       <main
         style={{
-          width: '100%',
           maxWidth: '900px',
           margin: '0 auto',
-          padding: '2.5rem 1rem 4rem',
-          boxSizing: 'border-box',
+          padding: '38px 16px 60px',
         }}
       >
-
-        {/* ===================================================
-            HERO
-        =================================================== */}
-
+        {/* HERO */}
         <section
           style={{
             textAlign: 'center',
-            marginBottom: '2rem',
+            marginBottom: '30px',
           }}
         >
           <h1
             style={{
-              fontSize: 'clamp(1.7rem, 5vw, 2.3rem)',
-              lineHeight: 1.2,
-              fontWeight: '800',
-              margin: '0 0 0.7rem',
+              fontSize: 'clamp(30px, 7vw, 48px)',
+              lineHeight: 1.12,
+              fontWeight: 800,
+              margin: '0 auto 14px',
+              maxWidth: '760px',
+              letterSpacing: '-1px',
             }}
           >
             Cari Fasilitas Kesehatan di Indonesia
@@ -218,60 +284,61 @@ export default function Home() {
 
           <p
             style={{
-              maxWidth: '680px',
               margin: '0 auto',
+              maxWidth: '720px',
               color: '#64748b',
-              fontSize: '0.95rem',
-              lineHeight: 1.6,
+              fontSize: '17px',
+              lineHeight: 1.7,
             }}
           >
             Temukan rumah sakit, klinik, praktik dokter, dan fasilitas
-            kesehatan berdasarkan nama, lokasi, atau alamat.
+            kesehatan berdasarkan nama, kota, provinsi, atau alamat.
           </p>
 
           <div
             style={{
-              marginTop: '0.8rem',
+              marginTop: '14px',
               color: '#64748b',
-              fontSize: '0.9rem',
+              fontSize: '16px',
             }}
           >
-            Database saat ini:{' '}
-            <strong style={{ color: '#0284c7' }}>
+            Terdata{' '}
+            <strong
+              style={{
+                color: '#0284c7',
+                fontSize: '20px',
+              }}
+            >
               {data.length.toLocaleString('id-ID')}
             </strong>{' '}
             faskes
           </div>
         </section>
 
-        {/* ===================================================
-            SEARCH BOX
-        =================================================== */}
-
+        {/* SEARCH */}
         <form
           onSubmit={handleSearch}
           style={{
             display: 'flex',
-            gap: '0.55rem',
-            width: '100%',
-            marginBottom: '2rem',
+            gap: '10px',
+            marginBottom: '32px',
           }}
         >
           <input
-            type="text"
+            type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Contoh: Aceh, Bandung, RSUD, klinik..."
+            placeholder="Cari nama faskes, kota, provinsi..."
             aria-label="Cari fasilitas kesehatan"
             style={{
               flex: 1,
               minWidth: 0,
-              padding: '0.9rem 1rem',
-              borderRadius: '10px',
+              padding: '15px 17px',
+              borderRadius: '12px',
               border: '1px solid #cbd5e1',
               backgroundColor: '#ffffff',
               color: '#0f172a',
-              fontSize: '1rem',
+              fontSize: '16px',
               outline: 'none',
               boxSizing: 'border-box',
             }}
@@ -281,12 +348,12 @@ export default function Home() {
             type="submit"
             style={{
               border: 'none',
-              borderRadius: '10px',
-              padding: '0.9rem 1.3rem',
+              borderRadius: '12px',
+              padding: '0 23px',
               backgroundColor: '#0284c7',
               color: '#ffffff',
-              fontSize: '0.95rem',
-              fontWeight: '700',
+              fontSize: '16px',
+              fontWeight: 700,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
             }}
@@ -295,124 +362,64 @@ export default function Home() {
           </button>
         </form>
 
-        {/* ===================================================
-            INITIAL STATE
-        =================================================== */}
-
-        {!hasSearched && (
-          <section
-            style={{
-              backgroundColor: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '12px',
-              padding: '2rem 1.25rem',
-              textAlign: 'center',
-            }}
-          >
-            <div
-              style={{
-                fontSize: '2.5rem',
-                marginBottom: '0.6rem',
-              }}
-            >
-              🔎
-            </div>
-
-            <h2
-              style={{
-                margin: '0 0 0.45rem',
-                fontSize: '1.05rem',
-              }}
-            >
-              Cari faskes berdasarkan lokasi atau nama
-            </h2>
-
-            <p
-              style={{
-                margin: 0,
-                color: '#64748b',
-                fontSize: '0.85rem',
-                lineHeight: 1.6,
-              }}
-            >
-              Coba cari nama rumah sakit, klinik, kota, kabupaten,
-              provinsi, atau alamat.
-            </p>
-          </section>
-        )}
-
-        {/* ===================================================
-            SEARCH RESULTS
-        =================================================== */}
-
+        {/* HASIL */}
         {hasSearched && (
           <section>
-
-            {/* RESULT HEADER */}
-
+            {/* HEADER HASIL */}
             <div
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                gap: '1rem',
-                marginBottom: '1rem',
-                flexWrap: 'wrap',
+                gap: '15px',
+                marginBottom: '16px',
               }}
             >
-              <div>
-                <h2
-                  style={{
-                    margin: 0,
-                    fontSize: '1.2rem',
-                    fontWeight: '800',
-                  }}
-                >
-                  Hasil pencarian
-                </h2>
-
-                <div
-                  style={{
-                    marginTop: '0.25rem',
-                    color: '#64748b',
-                    fontSize: '0.82rem',
-                  }}
-                >
-                  Pencarian: "{query}"
-                </div>
-              </div>
-
-              <div
+              <h2
                 style={{
-                  color: '#64748b',
-                  fontSize: '0.85rem',
+                  fontSize: '22px',
+                  margin: 0,
+                  fontWeight: 800,
                 }}
               >
-                <strong style={{ color: '#0284c7' }}>
-                  {results.length.toLocaleString('id-ID')}
-                </strong>{' '}
-                ditemukan
-              </div>
+                Hasil pencarian
+              </h2>
+
+              <span
+                style={{
+                  color: '#64748b',
+                  fontSize: '15px',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {results.length.toLocaleString('id-ID')} ditemukan
+              </span>
             </div>
 
-            {/* NO RESULT */}
-
-            {results.length === 0 && (
+            {/* TIDAK ADA HASIL */}
+            {results.length === 0 ? (
               <div
                 style={{
                   backgroundColor: '#ffffff',
                   border: '1px solid #e2e8f0',
-                  borderRadius: '12px',
-                  padding: '2rem 1.25rem',
+                  borderRadius: '14px',
+                  padding: '30px 20px',
                   textAlign: 'center',
                 }}
               >
-                <div style={{ fontSize: '2rem' }}>🔍</div>
+                <div
+                  style={{
+                    fontSize: '38px',
+                    marginBottom: '10px',
+                  }}
+                >
+                  🔎
+                </div>
 
                 <h3
                   style={{
-                    margin: '0.5rem 0 0.35rem',
-                    fontSize: '1rem',
+                    margin: '0 0 8px',
+                    fontSize: '18px',
                   }}
                 >
                   Faskes tidak ditemukan
@@ -422,463 +429,363 @@ export default function Home() {
                   style={{
                     margin: 0,
                     color: '#64748b',
-                    fontSize: '0.85rem',
+                    lineHeight: 1.6,
                   }}
                 >
-                  Belum ada data yang cocok dengan pencarian "{query}".
+                  Tidak ditemukan fasilitas kesehatan untuk kata kunci{' '}
+                  <strong>"{query}"</strong>.
                 </p>
               </div>
-            )}
+            ) : (
+              <>
+                {/* LIST */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gap: '14px',
+                  }}
+                >
+                  {results.slice(0, 100).map((item, idx) => {
+                    const nama = item.nama || item.name || 'Tanpa nama';
+                    const tipe =
+                      item.tipe || item.type || 'Fasilitas Kesehatan';
+                    const kota = item.kota || item.city || '';
+                    const provinsi = item.provinsi || item.province || '';
+                    const alamat = item.alamat || item.address || '';
+                    const telepon = item.telepon || item.phone || '';
+                    const website = item.website || item.url || '';
 
-            {/* RESULT LIST */}
+                    const latitude = item.latitude;
+                    const longitude = item.longitude;
 
-            {visibleResults.length > 0 && (
-              <div
-                style={{
-                  display: 'grid',
-                  gap: '1rem',
-                }}
-              >
+                    const hasCoordinates =
+                      latitude !== undefined &&
+                      latitude !== null &&
+                      longitude !== undefined &&
+                      longitude !== null &&
+                      latitude !== '' &&
+                      longitude !== '';
 
-                {visibleResults.map((item, index) => {
-                  const itemId =
-                    item.id ||
-                    `${item.osm_type || 'osm'}-${item.osm_id || index}`;
+                    const mapsUrl = getGoogleMapsUrl(item);
+                    const directionsUrl = getDirectionsUrl(item);
 
-                  const isExpanded = expandedId === itemId;
-
-                  const mapUrl = getGoogleMapsUrl(item);
-
-                  const websiteUrl = getWebsiteUrl(item.website);
-
-                  const phoneUrl = getPhoneUrl(item.telepon);
-
-                  return (
-                    <article
-                      key={itemId}
-                      style={{
-                        backgroundColor: '#ffffff',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '12px',
-                        padding: '1.2rem',
-                        boxSizing: 'border-box',
-                      }}
-                    >
-
-                      {/* NAME */}
-
-                      <h3
+                    return (
+                      <article
+                        key={
+                          item.id ||
+                          `${item.osm_type || 'item'}-${
+                            item.osm_id || idx
+                          }`
+                        }
                         style={{
-                          margin: '0 0 0.5rem',
-                          color: '#0284c7',
-                          fontSize: '1.15rem',
-                          lineHeight: 1.35,
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '16px',
+                          padding: '20px',
+                          boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
                         }}
                       >
-                        {item.nama || 'Nama faskes tidak tersedia'}
-                      </h3>
-
-                      {/* TYPE */}
-
-                      {item.tipe && (
-                        <span
+                        {/* NAMA */}
+                        <h3
                           style={{
-                            display: 'inline-block',
-                            backgroundColor: '#e0f2fe',
-                            color: '#0369a1',
-                            padding: '0.28rem 0.65rem',
-                            borderRadius: '999px',
-                            fontSize: '0.75rem',
-                            fontWeight: '700',
-                            marginBottom: '0.85rem',
+                            margin: '0 0 9px',
+                            fontSize: '21px',
+                            lineHeight: 1.35,
+                            color: '#0284c7',
+                            fontWeight: 800,
                           }}
                         >
-                          {item.tipe}
-                        </span>
-                      )}
+                          {nama}
+                        </h3>
 
-                      {/* LOCATION */}
-
-                      {getLocation(item) && (
+                        {/* TIPE */}
                         <div
                           style={{
-                            display: 'flex',
-                            gap: '0.5rem',
-                            alignItems: 'flex-start',
-                            marginBottom: '0.55rem',
+                            display: 'inline-block',
+                            padding: '5px 11px',
+                            borderRadius: '999px',
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            marginBottom: '15px',
+                            ...getTypeStyle(tipe),
                           }}
                         >
-                          <span>📍</span>
+                          {tipe}
+                        </div>
 
+                        {/* LOKASI */}
+                        {(kota || provinsi) && (
                           <div
                             style={{
-                              fontSize: '0.88rem',
+                              display: 'flex',
+                              gap: '9px',
+                              marginBottom: '9px',
                               color: '#334155',
+                              fontSize: '15px',
                               lineHeight: 1.5,
                             }}
                           >
-                            {getLocation(item)}
+                            <span>📍</span>
+
+                            <span>
+                              {[kota, provinsi]
+                                .filter(Boolean)
+                                .join(', ')}
+                            </span>
                           </div>
-                        </div>
-                      )}
-
-                      {/* ADDRESS */}
-
-                      {item.alamat && (
-                        <div
-                          style={{
-                            display: 'flex',
-                            gap: '0.5rem',
-                            alignItems: 'flex-start',
-                            marginBottom: '0.55rem',
-                          }}
-                        >
-                          <span>🏠</span>
-
-                          <div
-                            style={{
-                              fontSize: '0.85rem',
-                              color: '#64748b',
-                              lineHeight: 1.55,
-                            }}
-                          >
-                            {item.alamat}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* PHONE */}
-
-                      {item.telepon && (
-                        <div
-                          style={{
-                            display: 'flex',
-                            gap: '0.5rem',
-                            alignItems: 'flex-start',
-                            marginBottom: '0.55rem',
-                          }}
-                        >
-                          <span>☎️</span>
-
-                          <a
-                            href={phoneUrl}
-                            style={{
-                              color: '#0284c7',
-                              textDecoration: 'none',
-                              fontSize: '0.85rem',
-                            }}
-                          >
-                            {item.telepon}
-                          </a>
-                        </div>
-                      )}
-
-                      {/* WEBSITE */}
-
-                      {item.website && (
-                        <div
-                          style={{
-                            display: 'flex',
-                            gap: '0.5rem',
-                            alignItems: 'flex-start',
-                            marginBottom: '0.65rem',
-                          }}
-                        >
-                          <span>🌐</span>
-
-                          <a
-                            href={websiteUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              color: '#0284c7',
-                              textDecoration: 'none',
-                              fontSize: '0.85rem',
-                              wordBreak: 'break-all',
-                            }}
-                          >
-                            {item.website}
-                          </a>
-                        </div>
-                      )}
-
-                      {/* COORDINATE */}
-
-                      {(item.latitude !== undefined &&
-                        item.latitude !== null &&
-                        item.longitude !== undefined &&
-                        item.longitude !== null) && (
-                        <div
-                          style={{
-                            fontSize: '0.78rem',
-                            color: '#94a3b8',
-                            marginBottom: '0.9rem',
-                          }}
-                        >
-                          📌 {item.latitude}, {item.longitude}
-                        </div>
-                      )}
-
-                      {/* ACTIONS */}
-
-                      <div
-                        style={{
-                          display: 'flex',
-                          gap: '0.55rem',
-                          flexWrap: 'wrap',
-                        }}
-                      >
-
-                        {mapUrl && (
-                          <a
-                            href={mapUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.35rem',
-                              backgroundColor: '#e0f2fe',
-                              border: '1px solid #bae6fd',
-                              color: '#0369a1',
-                              padding: '0.55rem 0.8rem',
-                              borderRadius: '8px',
-                              textDecoration: 'none',
-                              fontSize: '0.82rem',
-                              fontWeight: '700',
-                            }}
-                          >
-                            🗺️ Buka di Google Maps
-                          </a>
                         )}
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setExpandedId(
-                              isExpanded ? null : itemId
-                            );
-                          }}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.35rem',
-                            backgroundColor: '#ffffff',
-                            border: '1px solid #cbd5e1',
-                            color: '#334155',
-                            padding: '0.55rem 0.8rem',
-                            borderRadius: '8px',
-                            fontSize: '0.82rem',
-                            fontWeight: '700',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {isExpanded
-                            ? '▲ Sembunyikan'
-                            : 'ℹ️ Lihat detail'}
-                        </button>
-                      </div>
-
-                      {/* =================================================
-                          EXPANDED DETAILS
-                      ================================================= */}
-
-                      {isExpanded && (
-                        <div
-                          style={{
-                            marginTop: '1rem',
-                            paddingTop: '1rem',
-                            borderTop: '1px solid #e2e8f0',
-                          }}
-                        >
-
-                          <h4
-                            style={{
-                              margin: '0 0 0.8rem',
-                              fontSize: '0.95rem',
-                            }}
-                          >
-                            Informasi Fasilitas Kesehatan
-                          </h4>
-
+                        {/* ALAMAT */}
+                        {alamat && (
                           <div
                             style={{
-                              display: 'grid',
-                              gap: '0.55rem',
-                              fontSize: '0.82rem',
+                              display: 'flex',
+                              gap: '9px',
+                              marginBottom: '9px',
+                              color: '#475569',
+                              fontSize: '14px',
+                              lineHeight: 1.6,
                             }}
                           >
+                            <span>🏠</span>
 
-                            <InfoRow
-                              label="Nama"
-                              value={item.nama}
-                            />
-
-                            <InfoRow
-                              label="Jenis"
-                              value={item.tipe}
-                            />
-
-                            <InfoRow
-                              label="Kota/Kabupaten"
-                              value={item.kota}
-                            />
-
-                            <InfoRow
-                              label="Provinsi"
-                              value={item.provinsi}
-                            />
-
-                            <InfoRow
-                              label="Alamat"
-                              value={item.alamat}
-                            />
-
-                            <InfoRow
-                              label="Telepon"
-                              value={item.telepon}
-                            />
-
-                            <InfoRow
-                              label="Website"
-                              value={item.website}
-                            />
-
-                            <InfoRow
-                              label="Latitude"
-                              value={item.latitude}
-                            />
-
-                            <InfoRow
-                              label="Longitude"
-                              value={item.longitude}
-                            />
-
-                            <InfoRow
-                              label="OSM Type"
-                              value={item.osm_type}
-                            />
-
-                            <InfoRow
-                              label="OSM ID"
-                              value={item.osm_id}
-                            />
-
+                            <span>{alamat}</span>
                           </div>
+                        )}
 
+                        {/* TELEPON */}
+                        {telepon && (
+                          <div
+                            style={{
+                              display: 'flex',
+                              gap: '9px',
+                              marginBottom: '9px',
+                              fontSize: '14px',
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            <span>📞</span>
+
+                            <a
+                              href={`tel:${telepon}`}
+                              style={{
+                                color: '#0369a1',
+                                textDecoration: 'none',
+                              }}
+                            >
+                              {telepon}
+                            </a>
+                          </div>
+                        )}
+
+                        {/* WEBSITE */}
+                        {website && (
+                          <div
+                            style={{
+                              display: 'flex',
+                              gap: '9px',
+                              marginBottom: '12px',
+                              fontSize: '14px',
+                              lineHeight: 1.5,
+                              overflowWrap: 'anywhere',
+                            }}
+                          >
+                            <span>🌐</span>
+
+                            <a
+                              href={website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                color: '#0369a1',
+                                textDecoration: 'none',
+                              }}
+                            >
+                              {website}
+                            </a>
+                          </div>
+                        )}
+
+                        {/* KOORDINAT */}
+                        {hasCoordinates && (
+                          <div
+                            style={{
+                              color: '#94a3b8',
+                              fontSize: '13px',
+                              marginTop: '8px',
+                              marginBottom: '16px',
+                            }}
+                          >
+                            Koordinat:{' '}
+                            {formatCoordinate(latitude)},{' '}
+                            {formatCoordinate(longitude)}
+                          </div>
+                        )}
+
+                        {/* ACTION */}
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: '9px',
+                            paddingTop: '4px',
+                          }}
+                        >
+                          {hasCoordinates && (
+                            <>
+                              <a
+                                href={mapsUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '7px',
+                                  padding: '10px 15px',
+                                  borderRadius: '10px',
+                                  backgroundColor: '#e0f2fe',
+                                  border: '1px solid #bae6fd',
+                                  color: '#0369a1',
+                                  textDecoration: 'none',
+                                  fontSize: '14px',
+                                  fontWeight: 700,
+                                }}
+                              >
+                                📍 Lihat di Google Maps
+                              </a>
+
+                              <a
+                                href={directionsUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '7px',
+                                  padding: '10px 15px',
+                                  borderRadius: '10px',
+                                  backgroundColor: '#ffffff',
+                                  border: '1px solid #cbd5e1',
+                                  color: '#334155',
+                                  textDecoration: 'none',
+                                  fontSize: '14px',
+                                  fontWeight: 700,
+                                }}
+                              >
+                                🧭 Petunjuk Arah
+                              </a>
+                            </>
+                          )}
+
+                          {telepon && (
+                            <a
+                              href={`tel:${telepon}`}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '7px',
+                                padding: '10px 15px',
+                                borderRadius: '10px',
+                                backgroundColor: '#f0fdf4',
+                                border: '1px solid #bbf7d0',
+                                color: '#15803d',
+                                textDecoration: 'none',
+                                fontSize: '14px',
+                                fontWeight: 700,
+                              }}
+                            >
+                              📞 Telepon
+                            </a>
+                          )}
                         </div>
-                      )}
+                      </article>
+                    );
+                  })}
+                </div>
 
-                    </article>
-                  );
-                })}
-
-              </div>
+                {/* LIMIT */}
+                {results.length > 100 && (
+                  <div
+                    style={{
+                      marginTop: '20px',
+                      padding: '15px',
+                      textAlign: 'center',
+                      color: '#64748b',
+                      fontSize: '14px',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '12px',
+                    }}
+                  >
+                    Menampilkan 100 dari{' '}
+                    {results.length.toLocaleString('id-ID')} hasil.
+                    Gunakan kata kunci yang lebih spesifik untuk menemukan
+                    fasilitas tertentu.
+                  </div>
+                )}
+              </>
             )}
-
-            {/* MORE RESULT NOTICE */}
-
-            {results.length > 50 && (
-              <div
-                style={{
-                  marginTop: '1rem',
-                  padding: '1rem',
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '10px',
-                  textAlign: 'center',
-                  color: '#64748b',
-                  fontSize: '0.82rem',
-                }}
-              >
-                Menampilkan 50 dari{' '}
-                {results.length.toLocaleString('id-ID')} hasil.
-                <br />
-                Pada versi final, hasil akan menggunakan pagination.
-              </div>
-            )}
-
           </section>
         )}
 
+        {/* INFO AWAL */}
+        {!hasSearched && (
+          <section
+            style={{
+              marginTop: '30px',
+              backgroundColor: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderRadius: '16px',
+              padding: '22px',
+            }}
+          >
+            <h2
+              style={{
+                margin: '0 0 10px',
+                fontSize: '18px',
+              }}
+            >
+              Cari fasilitas kesehatan di Indonesia
+            </h2>
+
+            <p
+              style={{
+                margin: 0,
+                color: '#64748b',
+                lineHeight: 1.7,
+                fontSize: '14px',
+              }}
+            >
+              Gunakan pencarian untuk menemukan rumah sakit, klinik,
+              praktik dokter, dan fasilitas kesehatan berdasarkan nama,
+              wilayah, atau alamat.
+            </p>
+          </section>
+        )}
       </main>
 
-      {/* =====================================================
-          FOOTER
-      ===================================================== */}
-
+      {/* FOOTER */}
       <footer
         style={{
-          backgroundColor: '#ffffff',
           borderTop: '1px solid #e2e8f0',
-          padding: '1.5rem 1rem',
+          backgroundColor: '#ffffff',
+          padding: '25px 16px',
+          color: '#64748b',
+          fontSize: '13px',
           textAlign: 'center',
         }}
       >
-        <p
-          style={{
-            margin: 0,
-            color: '#94a3b8',
-            fontSize: '0.78rem',
-          }}
-        >
+        <div>
           © {new Date().getFullYear()} CariFaskes.id
-        </p>
+        </div>
 
-        <p
-          style={{
-            margin: '0.35rem 0 0',
-            color: '#cbd5e1',
-            fontSize: '0.7rem',
-          }}
-        >
-          Data fasilitas kesehatan bersumber dari OpenStreetMap.
-        </p>
+        <div style={{ marginTop: '5px' }}>
+          Direktori fasilitas kesehatan Indonesia
+        </div>
       </footer>
-
-    </div>
-  );
-}
-
-
-// =========================================================
-// INFO ROW
-// =========================================================
-
-function InfoRow({ label, value }) {
-  if (
-    value === undefined ||
-    value === null ||
-    value === ''
-  ) {
-    return null;
-  }
-
-  return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '120px 1fr',
-        gap: '0.5rem',
-        lineHeight: 1.5,
-      }}
-    >
-      <span
-        style={{
-          color: '#94a3b8',
-        }}
-      >
-        {label}
-      </span>
-
-      <span
-        style={{
-          color: '#334155',
-          wordBreak: 'break-word',
-        }}
-      >
-        {String(value)}
-      </span>
     </div>
   );
 }
