@@ -1305,6 +1305,21 @@
     "osm_id": 3514362007
   },
   {
+    "id": "osm-node-14089683901",
+    "nama": "Puskesmas Sapta Jaya",
+    "tipe": "Klinik",
+    "kota": "Kabupaten Aceh Tamiang",
+    "kecamatan": "Sukamulia",
+    "provinsi": "Aceh",
+    "alamat": "",
+    "telepon": "",
+    "website": "",
+    "latitude": 4.263974,
+    "longitude": 98.124937,
+    "osm_type": "node",
+    "osm_id": 14089683901
+  },
+  {
     "id": "osm-way-1482477299",
     "nama": "RSUD Muda Sedia",
     "tipe": "Rumah Sakit",
