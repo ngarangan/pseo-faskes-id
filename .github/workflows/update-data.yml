@@ -2,9 +2,12 @@ name: Auto Update Database Faskes
 
 on:
   schedule:
-    # Jalan otomatis setiap hari Minggu jam 00:00 UTC
     - cron: '0 0 * * 0'
-  workflow_dispatch: # Memungkinkan tombol 'Run workflow' manual di GitHub Actions
+  workflow_dispatch:
+
+# PENTING: Berikan izin write agar bot bisa commit ke repositori
+permissions:
+  contents: write
 
 jobs:
   update-data:
@@ -13,6 +16,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -33,3 +38,5 @@ jobs:
         with:
           commit_message: "chore: auto-update database faskes [skip ci]"
           file_pattern: "data/database_faskes.json"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"
