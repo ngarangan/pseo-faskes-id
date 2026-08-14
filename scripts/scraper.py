@@ -1,49 +1,77 @@
 import requests
 import json
 import os
+import sys
 
-def fetch_faskes_osm():
-    print("Mencoba mengambil data faskes dari OpenStreetMap Mirror...")
+def fetch_faskes_from_overpass():
+    print("🌐 Menghubungkan ke OpenStreetMap Overpass API...")
     
-    # Menggunakan server mirror Kumi.systems yang lebih stabil untuk GitHub Actions
+    # Mirror Overpass API yang sangat stabil & cepat
     overpass_url = "https://overpass.kumi.systems/api/interpreter"
     
-    # Query difokuskan ke fasilitas kesehatan di Indonesia
+    # Query OSM: Mengambil Rumah Sakit, Klinik, & Puskesmas di Indonesia (dibatasi 300 data teratas)
     overpass_query = """
-    [out:json][timeout:30];
+    [out:json][timeout:60];
     area["ISO3166-1"="ID"]->.searchArea;
     (
       node["amenity"="hospital"](area.searchArea);
       node["amenity"="clinic"](area.searchArea);
-      node["amenity"="pharmacy"](area.searchArea);
+      node["amenity"="doctors"](area.searchArea);
+      way["amenity"="hospital"](area.searchArea);
     );
-    out center 200;
+    out center 300;
     """
     
+    # Header Wajib agar tidak di-block oleh OSM
     headers = {
-        'User-Agent': 'CariFaskesID-pSEO-Scraper/1.0 (contact: admin@carifaskes.id)'
+        'User-Agent': 'CariFaskesID-pSEO-Bot/1.0 (contact: admin@carifaskes.id)'
     }
     
     try:
-        response = requests.post(overpass_url, data={'data': overpass_query}, headers=headers, timeout=35)
+        response = requests.post(
+            overpass_url, 
+            data={'data': overpass_query}, 
+            headers=headers, 
+            timeout=45
+        )
         response.raise_for_status()
         result = response.json()
         
         elements = result.get('elements', [])
-        print(f"Berhasil terhubung! Ditemukan {len(elements)} data faskes asli dari OSM.")
+        print(f"📡 Berhasil! Ditemukan {len(elements)} data faskes mentah dari API.")
         
         data_faskes = []
         for idx, el in enumerate(elements):
             tags = el.get('tags', {})
             nama = tags.get('name')
+            
+            # Abaikan jika tidak ada nama faskes
             if not nama:
                 continue
                 
-            kota = tags.get('addr:city') or tags.get('addr:district') or tags.get('is_in:municipality') or 'Indonesia'
-            alamat = tags.get('addr:street') or tags.get('addr:full') or 'Alamat tidak tertera'
+            kota = (
+                tags.get('addr:city') or 
+                tags.get('addr:district') or 
+                tags.get('is_in:municipality') or 
+                tags.get('is_in:province') or 
+                'Indonesia'
+            )
+            alamat = (
+                tags.get('addr:street') or 
+                tags.get('addr:full') or 
+                'Alamat tidak tertera'
+            )
             tipe_raw = tags.get('amenity', 'faskes')
             
-            tipe = "Rumah Sakit" if tipe_raw == "hospital" else ("Klinik" if tipe_raw == "clinic" else "Apotek/Farmasi")
+            # Mapping jenis faskes
+            if tipe_raw == "hospital":
+                tipe = "Rumah Sakit"
+            elif tipe_raw == "clinic":
+                tipe = "Klinik"
+            elif tipe_raw == "doctors":
+                tipe = "Praktek Dokter"
+            else:
+                tipe = "Fasilitas Kesehatan"
             
             data_faskes.append({
                 "id": f"faskes-osm-{idx+1}",
@@ -53,34 +81,26 @@ def fetch_faskes_osm():
                 "alamat": alamat
             })
             
-        if len(data_faskes) > 0:
-            return data_faskes
-        else:
-            print("Data OSM kosong, mempertahankan data sampel.")
-            return get_fallback_data()
+        return data_faskes
 
     except Exception as e:
-        print(f"Peringatan: Gagal koneksi ke OSM ({e}). Memakai data fallback.")
-        return get_fallback_data()
-
-def get_fallback_data():
-    return [
-        {"id": "faskes-1", "nama": "RSUD Dokter Soedarso", "tipe": "Rumah Sakit", "kota": "Kota Pontianak", "alamat": "Jl. Kom Yos Sudarso, Pontianak"},
-        {"id": "faskes-2", "nama": "RSUD Sambas", "tipe": "Rumah Sakit", "kota": "Kabupaten Sambas", "alamat": "Jl. Siami, Tumuk Manggis, Kec. Sambas"},
-        {"id": "faskes-3", "nama": "Puskesmas Sambas", "tipe": "Puskesmas", "kota": "Kabupaten Sambas", "alamat": "Jl. Pembangunan, Kec. Sambas"},
-        {"id": "faskes-4", "nama": "Puskesmas Tebas", "tipe": "Puskesmas", "kota": "Kabupaten Sambas", "alamat": "Jl. Raya Tebas, Kec. Tebas"}
-    ]
+        print(f"❌ Error saat me-request API Overpass: {e}")
+        return None
 
 def main():
-    data = fetch_faskes_osm()
+    data = fetch_faskes_from_overpass()
     
-    os.makedirs('data', exist_ok=True)
-    path = 'data/database_faskes.json'
-    
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+    if data and len(data) > 0:
+        os.makedirs('data', exist_ok=True)
+        path = 'data/database_faskes.json'
         
-    print(f"✅ Selesai! {len(data)} data faskes berhasil disimpan ke {path}.")
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+            
+        print(f"✅ Selesai! {len(data)} data faskes asli dari API berhasil disimpan ke {path}.")
+    else:
+        print("⚠️ Gagal mendapatkan data dari API. Pembatalan update.")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
