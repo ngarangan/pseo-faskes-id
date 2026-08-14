@@ -2,10 +2,13 @@ name: Auto Update Database Faskes
 
 on:
   schedule:
-    - cron: '0 0 * * 0'
+    - cron: '17,47 * * * *'
   workflow_dispatch:
 
-# PENTING: Berikan izin write agar bot bisa commit ke repositori
+concurrency:
+  group: faskes-scraper
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -17,7 +20,8 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: main
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -29,14 +33,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
 
-      - name: Run Scraper Script
+      - name: Run Incremental Scraper
         run: |
           python scripts/scraper.py
 
       - name: Commit and Push Changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: auto-update database faskes [skip ci]"
-          file_pattern: "data/database_faskes.json"
+          commit_message: "chore: update faskes database [skip ci]"
+          file_pattern: "data/"
           commit_user_name: "github-actions[bot]"
           commit_user_email: "github-actions[bot]@users.noreply.github.com"
