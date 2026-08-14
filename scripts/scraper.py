@@ -161,7 +161,7 @@ def load_json(path, default):
     except Exception as e:
 
         print(
-            f"⚠️ Gagal membaca {path}: {e}"
+            f"âš ï¸ Gagal membaca {path}: {e}"
         )
 
         return default
@@ -226,6 +226,237 @@ def save_progress(progress):
 
 
 # ============================================================
+# REPORT / DATA QUALITY
+# ============================================================
+
+REPORT_FILE = os.path.join(
+    DATA_DIR,
+    "scraper-report.json"
+)
+
+
+def build_report(progress):
+    """
+    Membuat laporan coverage dan kualitas database.
+    Tidak mengubah data scraper.
+    """
+
+    database = load_json(MASTER_FILE, [])
+
+    if not isinstance(database, list):
+        database = []
+
+    total_provinces = len(PROVINCES)
+
+    completed_provinces = min(
+        int(progress.get("province_index", 0)),
+        total_provinces
+    )
+
+    total_areas = 0
+    completed_areas = 0
+    province_stats = []
+
+    areas_state = progress.get("areas", {})
+
+    for code, province_name in PROVINCES:
+
+        state = areas_state.get(code, {})
+        area_list = state.get("list", []) or []
+        completed = state.get("completed", []) or []
+
+        total = len(area_list)
+        done = len(set(str(x) for x in completed))
+
+        total_areas += total
+        completed_areas += min(done, total)
+
+        province_file_data = load_province_data(code)
+
+        if not isinstance(province_file_data, list):
+            province_file_data = []
+
+        province_stats.append({
+            "code": code,
+            "name": province_name,
+            "areas": {
+                "completed": min(done, total),
+                "total": total,
+                "complete": total > 0 and done >= total
+            },
+            "facilities": len(province_file_data)
+        })
+
+    def non_empty(item, field):
+        value = item.get(field)
+        return value not in (None, "", [], {})
+
+    total = len(database)
+
+    hospitals = sum(
+        1 for x in database
+        if x.get("tipe") == "Rumah Sakit"
+    )
+
+    clinics = sum(
+        1 for x in database
+        if x.get("tipe") == "Klinik"
+    )
+
+    doctors = sum(
+        1 for x in database
+        if x.get("tipe") == "Praktek Dokter"
+    )
+
+    coordinates = sum(
+        1 for x in database
+        if x.get("latitude") is not None
+        and x.get("longitude") is not None
+    )
+
+    addresses = sum(
+        1 for x in database
+        if non_empty(x, "alamat")
+    )
+
+    phones = sum(
+        1 for x in database
+        if non_empty(x, "telepon")
+    )
+
+    websites = sum(
+        1 for x in database
+        if non_empty(x, "website")
+    )
+
+    names = sum(
+        1 for x in database
+        if non_empty(x, "nama")
+    )
+
+    ids = [
+        str(x.get("id"))
+        for x in database
+        if x.get("id")
+    ]
+
+    duplicate_ids = len(ids) - len(set(ids))
+
+    coverage_complete = (
+        completed_provinces >= total_provinces
+        and total_areas > 0
+        and completed_areas >= total_areas
+    )
+
+    report = {
+        "status": (
+            "completed"
+            if coverage_complete
+            else "running"
+        ),
+
+        "updated_at": (
+            datetime.utcnow().isoformat()
+            + "Z"
+        ),
+
+        "coverage": {
+            "provinces_completed": completed_provinces,
+            "provinces_total": total_provinces,
+            "provinces_percent": round(
+                completed_provinces / total_provinces * 100,
+                2
+            ) if total_provinces else 0,
+
+            "areas_completed": completed_areas,
+            "areas_total": total_areas,
+            "areas_percent": round(
+                completed_areas / total_areas * 100,
+                2
+            ) if total_areas else 0
+        },
+
+        "database": {
+            "total_facilities": total,
+            "hospitals": hospitals,
+            "clinics": clinics,
+            "doctors": doctors,
+            "other": max(
+                0,
+                total - hospitals - clinics - doctors
+            )
+        },
+
+        "quality": {
+            "with_name": names,
+            "with_coordinates": coordinates,
+            "with_address": addresses,
+            "with_phone": phones,
+            "with_website": websites,
+            "duplicate_ids": duplicate_ids
+        },
+
+        "province_stats": province_stats
+    }
+
+    atomic_save_json(
+        REPORT_FILE,
+        report
+    )
+
+    print()
+    print("=" * 60)
+    print("ðŸ“Š DATABASE REPORT")
+    print("=" * 60)
+    print(
+        f"ðŸ›ï¸ Provinsi : "
+        f"{completed_provinces}/{total_provinces}"
+    )
+    print(
+        f"ðŸ™ï¸ Kab/Kota : "
+        f"{completed_areas}/{total_areas}"
+    )
+    print(
+        f"ðŸ¥ Faskes   : "
+        f"{total}"
+    )
+    print(
+        f"ðŸ“ Koordinat: "
+        f"{coordinates}/{total}"
+    )
+    print(
+        f"ðŸ  Alamat   : "
+        f"{addresses}/{total}"
+    )
+    print(
+        f"ðŸ“ž Telepon  : "
+        f"{phones}/{total}"
+    )
+    print(
+        f"ðŸŒ Website  : "
+        f"{websites}/{total}"
+    )
+    print(
+        f"â™»ï¸ Duplikat : "
+        f"{duplicate_ids}"
+    )
+
+    if coverage_complete:
+        print()
+        print("ðŸŽ‰ STATUS: DATABASE INDONESIA SELESAI")
+    else:
+        print()
+        print("â³ STATUS: MASIH BERJALAN")
+
+    print(
+        f"ðŸ’¾ Report  : {REPORT_FILE}"
+    )
+    print("=" * 60)
+
+    return report
+
+
+# ============================================================
 # OVERPASS REQUEST
 # ============================================================
 
@@ -238,7 +469,7 @@ def overpass_request(
 
         print()
         print(
-            f"🌐 Overpass: {server}"
+            f"ðŸŒ Overpass: {server}"
         )
 
         for attempt in range(1, 4):
@@ -246,7 +477,7 @@ def overpass_request(
             try:
 
                 print(
-                    f"🔄 {label} | "
+                    f"ðŸ”„ {label} | "
                     f"attempt {attempt}/3"
                 )
 
@@ -267,7 +498,7 @@ def overpass_request(
                 )
 
                 print(
-                    f"⏱️ {elapsed}s | "
+                    f"â±ï¸ {elapsed}s | "
                     f"HTTP {response.status_code} | "
                     f"{len(response.content)} bytes"
                 )
@@ -283,7 +514,7 @@ def overpass_request(
                     except Exception:
 
                         print(
-                            "❌ Response bukan JSON."
+                            "âŒ Response bukan JSON."
                         )
 
                         print(
@@ -300,7 +531,7 @@ def overpass_request(
                 ):
 
                     print(
-                        "⚠️ Overpass sedang sibuk."
+                        "âš ï¸ Overpass sedang sibuk."
                     )
 
                     time.sleep(
@@ -310,7 +541,7 @@ def overpass_request(
                     continue
 
                 print(
-                    "❌ HTTP ERROR:",
+                    "âŒ HTTP ERROR:",
                     response.status_code
                 )
 
@@ -323,7 +554,7 @@ def overpass_request(
             except requests.exceptions.Timeout:
 
                 print(
-                    "⏰ REQUEST TIMEOUT"
+                    "â° REQUEST TIMEOUT"
                 )
 
                 time.sleep(
@@ -333,7 +564,7 @@ def overpass_request(
             except requests.exceptions.RequestException as e:
 
                 print(
-                    "❌ REQUEST ERROR:",
+                    "âŒ REQUEST ERROR:",
                     e
                 )
 
@@ -343,7 +574,7 @@ def overpass_request(
 
         print()
         print(
-            "➡️ Mencoba mirror berikutnya..."
+            "âž¡ï¸ Mencoba mirror berikutnya..."
         )
 
     return None
@@ -436,7 +667,7 @@ out tags;
 
     print()
     print(
-        f"📍 Ditemukan "
+        f"ðŸ“ Ditemukan "
         f"{len(areas)} kab/kota."
     )
 
@@ -679,7 +910,7 @@ def load_province_data(
     ):
 
         print(
-            "⚠️ Format province JSON "
+            "âš ï¸ Format province JSON "
             "bukan list. Reset."
         )
 
@@ -712,11 +943,11 @@ def save_province_data(
 
     print()
     print(
-        f"💾 File: {path}"
+        f"ðŸ’¾ File: {path}"
     )
 
     print(
-        f"📊 Data provinsi: "
+        f"ðŸ“Š Data provinsi: "
         f"{len(data)}"
     )
 
@@ -729,7 +960,7 @@ def rebuild_master():
 
     print()
     print(
-        "🔨 Rebuilding database_faskes.json..."
+        "ðŸ”¨ Rebuilding database_faskes.json..."
     )
 
     database = {}
@@ -800,7 +1031,7 @@ def rebuild_master():
 
     print()
     print(
-        f"📊 Total database: "
+        f"ðŸ“Š Total database: "
         f"{len(final_data)}"
     )
 
@@ -817,7 +1048,7 @@ def main():
     )
 
     print(
-        "🇮🇩 CARI FASKES ID"
+        "ðŸ‡®ðŸ‡© CARI FASKES ID"
     )
 
     print(
@@ -845,10 +1076,11 @@ def main():
 
         print()
         print(
-            "🎉 Semua provinsi sudah selesai."
+            "ðŸŽ‰ Semua provinsi sudah selesai."
         )
 
         rebuild_master()
+        build_report(progress)
 
         return
 
@@ -864,12 +1096,12 @@ def main():
 
     print()
     print(
-        f"📍 Provinsi: "
+        f"ðŸ“ Provinsi: "
         f"{province_name}"
     )
 
     print(
-        f"📊 Progress provinsi: "
+        f"ðŸ“Š Progress provinsi: "
         f"{province_index + 1}/"
         f"{len(PROVINCES)}"
     )
@@ -902,7 +1134,7 @@ def main():
 
         print()
         print(
-            "📡 Mengambil daftar "
+            "ðŸ“¡ Mengambil daftar "
             "kabupaten/kota..."
         )
 
@@ -913,7 +1145,7 @@ def main():
         if areas is None:
 
             print(
-                "❌ Gagal mendapatkan "
+                "âŒ Gagal mendapatkan "
                 "daftar kab/kota."
             )
 
@@ -963,7 +1195,7 @@ def main():
 
         print()
         print(
-            f"🎉 {province_name} selesai."
+            f"ðŸŽ‰ {province_name} selesai."
         )
 
         progress[
@@ -1045,11 +1277,11 @@ def main():
         )
 
         print(
-            f"🏙️ {area_name}"
+            f"ðŸ™ï¸ {area_name}"
         )
 
         print(
-            f"📌 Area: "
+            f"ðŸ“Œ Area: "
             f"{area_index + 1}/"
             f"{len(areas)}"
         )
@@ -1061,7 +1293,7 @@ def main():
         if area_id in completed:
 
             print(
-                "⏭️ Sudah selesai. Skip."
+                "â­ï¸ Sudah selesai. Skip."
             )
 
             area_index += 1
@@ -1086,11 +1318,11 @@ def main():
 
             print()
             print(
-                "❌ Gagal mengambil area."
+                "âŒ Gagal mengambil area."
             )
 
             print(
-                "💾 Progress tetap disimpan."
+                "ðŸ’¾ Progress tetap disimpan."
             )
 
             province_state[
@@ -1111,6 +1343,9 @@ def main():
                 progress
             )
 
+            rebuild_master()
+            build_report(progress)
+
             # Jangan lanjut ke area berikutnya
             break
 
@@ -1120,7 +1355,7 @@ def main():
 
         print()
         print(
-            f"✅ Ditemukan "
+            f"âœ… Ditemukan "
             f"{len(data)} faskes"
         )
 
@@ -1190,7 +1425,7 @@ def main():
         )
 
         print(
-            f"💾 Progress: "
+            f"ðŸ’¾ Progress: "
             f"{area_index}/"
             f"{len(areas)}"
         )
@@ -1205,7 +1440,7 @@ def main():
 
         print()
         print(
-            f"🎉 {province_name} "
+            f"ðŸŽ‰ {province_name} "
             f"SELESAI!"
         )
 
@@ -1222,6 +1457,7 @@ def main():
     # --------------------------------------------------------
 
     rebuild_master()
+    build_report(progress)
 
     # --------------------------------------------------------
     # SUMMARY
@@ -1233,27 +1469,27 @@ def main():
     )
 
     print(
-        f"✅ Batch selesai"
+        f"âœ… Batch selesai"
     )
 
     print(
-        f"📊 Area diproses: "
+        f"ðŸ“Š Area diproses: "
         f"{processed}"
     )
 
     print(
-        f"📍 Provinsi: "
+        f"ðŸ“ Provinsi: "
         f"{province_name}"
     )
 
     print(
-        f"📌 Posisi berikutnya: "
+        f"ðŸ“Œ Posisi berikutnya: "
         f"{area_index + 1}/"
         f"{len(areas)}"
     )
 
     print(
-        f"📊 Faskes provinsi: "
+        f"ðŸ“Š Faskes provinsi: "
         f"{len(province_data)}"
     )
 
