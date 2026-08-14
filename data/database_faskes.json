@@ -1,1 +1,30 @@
-[]
+[
+  {
+    "id": "faskes-1",
+    "nama": "RSUD Sambas",
+    "tipe": "Rumah Sakit",
+    "kota": "Kabupaten Sambas",
+    "alamat": "Jl. Siami, Tumuk Manggis, Kec. Sambas"
+  },
+  {
+    "id": "faskes-2",
+    "nama": "Puskesmas Sambas",
+    "tipe": "Puskesmas",
+    "kota": "Kabupaten Sambas",
+    "alamat": "Jl. Pembangunan, Kec. Sambas"
+  },
+  {
+    "id": "faskes-3",
+    "nama": "Puskesmas Tebas",
+    "tipe": "Puskesmas",
+    "kota": "Kabupaten Sambas",
+    "alamat": "Jl. Raya Tebas, Kec. Tebas"
+  },
+  {
+    "id": "faskes-4",
+    "nama": "RSUD Dokter Soedarso",
+    "tipe": "Rumah Sakit",
+    "kota": "Kota Pontianak",
+    "alamat": "Jl. Kom Yos Sudarso, Pontianak"
+  }
+]
