@@ -1,25 +1,8 @@
-import faskesData from '../data/database_faskes.json';
-
 export default function Home() {
-  // Menghitung estimasi total faskes yang terkumpul
-  const totalFaskes = faskesData ? faskesData.length : 0;
-
   return (
-    
-      
-        🏥 CariFaskes.id
-        Direktori Fasilitas Kesehatan Terlengkap di Indonesia
-      
-
-      
-        Status Otomatisasi pSEO
-        ✅ Database terhubung secara otomatis dari GitHub Actions.
-        📊 Total Fasilitas Kesehatan Terdata: {totalFaskes.toLocaleString('id-ID')} faskes
-      
-
-      
-        © 2026 CariFaskes.id — Powered by OpenStreetMap & Next.js
-      
-    
+    <main style={{ padding: '2rem', fontFamily: 'system-ui, sans-serif', textAlign: 'center' }}>
+      <h1 style={{ color: '#0284c7' }}>🏥 CariFaskes.id</h1>
+      <p style={{ color: '#475569' }}>Situs Direktori Fasilitas Kesehatan Indonesia sedang disiapkan.</p>
+    </main>
   );
 }
