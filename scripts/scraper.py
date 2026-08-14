@@ -6,9 +6,9 @@ def fetch_data():
     print("Mulai mengambil data faskes dari Overpass API...")
     overpass_url = "http://overpass-api.de/api/interpreter"
     
-    # Query mengambil data Klinik & Puskesmas di Indonesia
+    # Query mengambil data Klinik & Rumah Sakit
     query = """
-    [out:json][timeout:90];
+    [out:json][timeout:60];
     area["ISO3166-1"="ID"]->.searchArea;
     (
       node["amenity"="clinic"](area.searchArea);
