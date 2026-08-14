@@ -105,6 +105,21 @@
     "osm_id": 9793311819
   },
   {
+    "id": "osm-way-1464986727",
+    "nama": "Klinik Harvest",
+    "tipe": "Klinik",
+    "kota": "",
+    "kecamatan": "",
+    "provinsi": "",
+    "alamat": "",
+    "telepon": "",
+    "website": "",
+    "latitude": 3.3458651,
+    "longitude": 97.9244664,
+    "osm_type": "way",
+    "osm_id": 1464986727
+  },
+  {
     "id": "osm-way-624302981",
     "nama": "Klinik Yasmin",
     "tipe": "Klinik",
@@ -765,6 +780,21 @@
     "osm_id": 338247950
   },
   {
+    "id": "osm-node-11802746465",
+    "nama": "Puskesmas Banda Mulia",
+    "tipe": "Rumah Sakit",
+    "kota": "",
+    "kecamatan": "",
+    "provinsi": "",
+    "alamat": "",
+    "telepon": "",
+    "website": "",
+    "latitude": 4.4355543,
+    "longitude": 98.1317786,
+    "osm_type": "node",
+    "osm_id": 11802746465
+  },
+  {
     "id": "osm-way-270791143",
     "nama": "Puskesmas Blangpidie",
     "tipe": "Klinik",
@@ -868,6 +898,21 @@
     "longitude": 96.8025468,
     "osm_type": "way",
     "osm_id": 309167870
+  },
+  {
+    "id": "osm-way-925007187",
+    "nama": "Puskesmas Pulau Banyak",
+    "tipe": "Rumah Sakit",
+    "kota": "",
+    "kecamatan": "",
+    "provinsi": "",
+    "alamat": "",
+    "telepon": "",
+    "website": "",
+    "latitude": 2.300169,
+    "longitude": 97.4081563,
+    "osm_type": "way",
+    "osm_id": 925007187
   },
   {
     "id": "osm-way-311563427",
@@ -1003,6 +1048,21 @@
     "longitude": 96.8601477,
     "osm_type": "way",
     "osm_id": 314673813
+  },
+  {
+    "id": "osm-node-3987615505",
+    "nama": "Rumah Sakit Datu Beru",
+    "tipe": "Rumah Sakit",
+    "kota": "",
+    "kecamatan": "",
+    "provinsi": "",
+    "alamat": "",
+    "telepon": "",
+    "website": "",
+    "latitude": 4.6363029,
+    "longitude": 96.8515929,
+    "osm_type": "node",
+    "osm_id": 3987615505
   },
   {
     "id": "osm-node-3144948369",
@@ -1243,5 +1303,20 @@
     "longitude": 96.9157651,
     "osm_type": "node",
     "osm_id": 3514362007
+  },
+  {
+    "id": "osm-way-1482477299",
+    "nama": "RSUD Muda Sedia",
+    "tipe": "Rumah Sakit",
+    "kota": "Kesehatanbandar",
+    "kecamatan": "",
+    "provinsi": "Aceh",
+    "alamat": "",
+    "telepon": "",
+    "website": "",
+    "latitude": 4.283716,
+    "longitude": 98.0522169,
+    "osm_type": "way",
+    "osm_id": 1482477299
   }
 ]
