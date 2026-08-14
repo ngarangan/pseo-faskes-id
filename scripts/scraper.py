@@ -1,4 +1,3 @@
-
 import requests
 import json
 import os
@@ -12,17 +11,36 @@ from datetime import datetime
 # CONFIG
 # ============================================================
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(
+    os.path.dirname(
+        os.path.abspath(__file__)
+    )
+)
 
-DATA_DIR = os.path.join(BASE_DIR, "data")
-FASKES_DIR = os.path.join(DATA_DIR, "faskes")
+DATA_DIR = os.path.join(
+    BASE_DIR,
+    "data"
+)
 
-PROGRESS_FILE = os.path.join(DATA_DIR, "scraper-progress.json")
-MASTER_FILE = os.path.join(DATA_DIR, "database_faskes.json")
+FASKES_DIR = os.path.join(
+    DATA_DIR,
+    "faskes"
+)
 
-# Jumlah kabupaten/kota yang diproses setiap GitHub Action
+PROGRESS_FILE = os.path.join(
+    DATA_DIR,
+    "scraper-progress.json"
+)
+
+MASTER_FILE = os.path.join(
+    DATA_DIR,
+    "database_faskes.json"
+)
+
+# Maksimal kabupaten/kota setiap GitHub Actions
 MAX_AREAS_PER_RUN = 5
 
+# Timeout per request
 REQUEST_TIMEOUT = 120
 
 HEADERS = {
@@ -46,11 +64,11 @@ OVERPASS_SERVERS = [
 
 
 # ============================================================
-# 38 PROVINCES
-# ISO 3166-2 Indonesia
+# 38 PROVINSI INDONESIA
 # ============================================================
 
 PROVINCES = [
+
     ("ID-AC", "Aceh"),
     ("ID-SU", "Sumatera Utara"),
     ("ID-SB", "Sumatera Barat"),
@@ -99,24 +117,26 @@ PROVINCES = [
 
 
 # ============================================================
-# DIRECTORY
+# PREPARE DIRECTORY
 # ============================================================
 
-os.makedirs(DATA_DIR, exist_ok=True)
-os.makedirs(FASKES_DIR, exist_ok=True)
+os.makedirs(
+    DATA_DIR,
+    exist_ok=True
+)
+
+os.makedirs(
+    FASKES_DIR,
+    exist_ok=True
+)
 
 
 # ============================================================
-# HELPERS
+# HELPER
 # ============================================================
-
-def slugify(text):
-    text = text.lower().strip()
-    text = re.sub(r"[^a-z0-9]+", "-", text)
-    return text.strip("-")
-
 
 def province_file(code):
+
     return os.path.join(
         FASKES_DIR,
         f"{code.lower()}.json"
@@ -124,13 +144,26 @@ def province_file(code):
 
 
 def load_json(path, default):
+
     if not os.path.exists(path):
         return default
 
     try:
-        with open(path, "r", encoding="utf-8") as f:
+
+        with open(
+            path,
+            "r",
+            encoding="utf-8"
+        ) as f:
+
             return json.load(f)
-    except Exception:
+
+    except Exception as e:
+
+        print(
+            f"⚠️ Gagal membaca {path}: {e}"
+        )
+
         return default
 
 
@@ -151,15 +184,26 @@ def atomic_save_json(path, data):
             indent=2
         )
 
-    os.replace(temp, path)
+    os.replace(
+        temp,
+        path
+    )
 
+
+# ============================================================
+# PROGRESS
+# ============================================================
 
 def load_progress():
 
     default = {
+
         "province_index": 0,
+
         "areas": {},
+
         "last_run": None
+
     }
 
     return load_json(
@@ -171,7 +215,8 @@ def load_progress():
 def save_progress(progress):
 
     progress["last_run"] = (
-        datetime.utcnow().isoformat() + "Z"
+        datetime.utcnow().isoformat()
+        + "Z"
     )
 
     atomic_save_json(
@@ -184,12 +229,17 @@ def save_progress(progress):
 # OVERPASS REQUEST
 # ============================================================
 
-def overpass_request(query, label="query"):
+def overpass_request(
+    query,
+    label="query"
+):
 
     for server in OVERPASS_SERVERS:
 
         print()
-        print(f"🌐 Overpass: {server}")
+        print(
+            f"🌐 Overpass: {server}"
+        )
 
         for attempt in range(1, 4):
 
@@ -204,7 +254,9 @@ def overpass_request(query, label="query"):
 
                 response = requests.post(
                     server,
-                    data={"data": query},
+                    data={
+                        "data": query
+                    },
                     headers=HEADERS,
                     timeout=REQUEST_TIMEOUT
                 )
@@ -220,6 +272,8 @@ def overpass_request(query, label="query"):
                     f"{len(response.content)} bytes"
                 )
 
+                # SUCCESS
+
                 if response.status_code == 200:
 
                     try:
@@ -231,6 +285,12 @@ def overpass_request(query, label="query"):
                         print(
                             "❌ Response bukan JSON."
                         )
+
+                        print(
+                            response.text[:1000]
+                        )
+
+                # BUSY / RATE LIMIT / GATEWAY
 
                 if response.status_code in (
                     429,
@@ -250,12 +310,12 @@ def overpass_request(query, label="query"):
                     continue
 
                 print(
-                    "❌ HTTP error:",
+                    "❌ HTTP ERROR:",
                     response.status_code
                 )
 
                 print(
-                    response.text[:500]
+                    response.text[:1000]
                 )
 
                 break
@@ -263,7 +323,7 @@ def overpass_request(query, label="query"):
             except requests.exceptions.Timeout:
 
                 print(
-                    "⏰ Timeout."
+                    "⏰ REQUEST TIMEOUT"
                 )
 
                 time.sleep(
@@ -273,7 +333,7 @@ def overpass_request(query, label="query"):
             except requests.exceptions.RequestException as e:
 
                 print(
-                    "❌ Request error:",
+                    "❌ REQUEST ERROR:",
                     e
                 )
 
@@ -281,6 +341,7 @@ def overpass_request(query, label="query"):
                     5 * attempt
                 )
 
+        print()
         print(
             "➡️ Mencoba mirror berikutnya..."
         )
@@ -292,12 +353,17 @@ def overpass_request(query, label="query"):
 # GET KABUPATEN / KOTA
 # ============================================================
 
-def get_areas(province_code):
+def get_areas(
+    province_code
+):
 
     query = f"""
 [out:json][timeout:60];
 
-area["ISO3166-2"="{province_code}"][admin_level=4]->.province;
+area
+    ["ISO3166-2"="{province_code}"]
+    ["admin_level"="4"]
+    ->.province;
 
 rel
     ["boundary"="administrative"]
@@ -312,59 +378,82 @@ out tags;
         f"ambil kab/kota {province_code}"
     )
 
-    if not result:
+    if result is None:
+
         return None
 
     areas = []
 
-    for el in result.get("elements", []):
+    for element in result.get(
+        "elements",
+        []
+    ):
 
-        tags = el.get("tags", {})
+        tags = element.get(
+            "tags",
+            {}
+        )
 
-        osm_id = el.get("id")
-        name = tags.get("name")
+        osm_id = element.get(
+            "id"
+        )
+
+        name = tags.get(
+            "name"
+        )
 
         if not osm_id or not name:
             continue
 
         areas.append({
-            "osm_id": osm_id,
+
+            "osm_id": str(
+                osm_id
+            ),
+
             "name": name
+
         })
 
     # Deduplicate
+
     unique = {}
 
     for area in areas:
-        unique[area["osm_id"]] = area
+
+        unique[
+            area["osm_id"]
+        ] = area
 
     areas = list(
         unique.values()
     )
 
     areas.sort(
-        key=lambda x: x["name"].lower()
+        key=lambda x:
+        x["name"].lower()
     )
 
     print()
     print(
-        f"📍 Ditemukan {len(areas)} kab/kota."
+        f"📍 Ditemukan "
+        f"{len(areas)} kab/kota."
     )
 
     return areas
 
 
 # ============================================================
-# FETCH FASKES FROM ONE KAB/KOTA
+# FETCH FASKES
 # ============================================================
 
-def fetch_area_faskes(area_osm_id):
-
-    # Area ID dari relation OSM:
-    # 3600000000 + relation id
+def fetch_area_faskes(
+    area_osm_id
+):
 
     area_id = (
-        3600000000 + int(area_osm_id)
+        3600000000
+        + int(area_osm_id)
     )
 
     query = f"""
@@ -373,9 +462,14 @@ def fetch_area_faskes(area_osm_id):
 area({area_id})->.searchArea;
 
 (
-    nwr["amenity"="hospital"](area.searchArea);
-    nwr["amenity"="clinic"](area.searchArea);
-    nwr["amenity"="doctors"](area.searchArea);
+    nwr["amenity"="hospital"]
+        (area.searchArea);
+
+    nwr["amenity"="clinic"]
+        (area.searchArea);
+
+    nwr["amenity"="doctors"]
+        (area.searchArea);
 );
 
 out center tags;
@@ -387,10 +481,14 @@ out center tags;
     )
 
     if result is None:
+
         return None
 
     return parse_faskes(
-        result.get("elements", [])
+        result.get(
+            "elements",
+            []
+        )
     )
 
 
@@ -398,13 +496,15 @@ out center tags;
 # PARSE FASKES
 # ============================================================
 
-def parse_faskes(elements):
+def parse_faskes(
+    elements
+):
 
     result = {}
 
-    for el in elements:
+    for element in elements:
 
-        tags = el.get(
+        tags = element.get(
             "tags",
             {}
         )
@@ -416,12 +516,12 @@ def parse_faskes(elements):
         if not nama:
             continue
 
-        osm_type = el.get(
+        osm_type = element.get(
             "type",
             ""
         )
 
-        osm_id = el.get(
+        osm_id = element.get(
             "id"
         )
 
@@ -432,17 +532,17 @@ def parse_faskes(elements):
 
         if osm_type == "node":
 
-            latitude = el.get(
+            latitude = element.get(
                 "lat"
             )
 
-            longitude = el.get(
+            longitude = element.get(
                 "lon"
             )
 
         else:
 
-            center = el.get(
+            center = element.get(
                 "center",
                 {}
             )
@@ -480,66 +580,76 @@ def parse_faskes(elements):
 
         item = {
 
-            "id": (
-                f"osm-{osm_type}-{osm_id}"
-            ),
+            "id":
+                f"osm-{osm_type}-{osm_id}",
 
-            "nama": nama,
+            "nama":
+                nama,
 
-            "tipe": tipe,
+            "tipe":
+                tipe,
 
-            "kota": (
-                tags.get("addr:city")
-                or tags.get("addr:town")
-                or tags.get("addr:municipality")
-                or tags.get("addr:district")
-                or ""
-            ),
+            "kota":
+                (
+                    tags.get("addr:city")
+                    or tags.get("addr:town")
+                    or tags.get("addr:municipality")
+                    or tags.get("addr:district")
+                    or ""
+                ),
 
-            "kecamatan": (
-                tags.get("addr:subdistrict")
-                or tags.get("addr:district")
-                or ""
-            ),
+            "kecamatan":
+                (
+                    tags.get("addr:subdistrict")
+                    or tags.get("addr:district")
+                    or ""
+                ),
 
-            "provinsi": (
-                tags.get("addr:state")
-                or tags.get("addr:province")
-                or ""
-            ),
+            "provinsi":
+                (
+                    tags.get("addr:state")
+                    or tags.get("addr:province")
+                    or ""
+                ),
 
-            "alamat": (
-                tags.get("addr:full")
-                or tags.get("addr:street")
-                or tags.get("addr:place")
-                or ""
-            ),
+            "alamat":
+                (
+                    tags.get("addr:full")
+                    or tags.get("addr:street")
+                    or tags.get("addr:place")
+                    or ""
+                ),
 
-            "telepon": (
-                tags.get("phone")
-                or tags.get("contact:phone")
-                or ""
-            ),
+            "telepon":
+                (
+                    tags.get("phone")
+                    or tags.get("contact:phone")
+                    or ""
+                ),
 
-            "website": (
-                tags.get("website")
-                or tags.get("contact:website")
-                or ""
-            ),
+            "website":
+                (
+                    tags.get("website")
+                    or tags.get("contact:website")
+                    or ""
+                ),
 
-            "latitude": latitude,
+            "latitude":
+                latitude,
 
-            "longitude": longitude,
+            "longitude":
+                longitude,
 
-            "osm_type": osm_type,
+            "osm_type":
+                osm_type,
 
-            "osm_id": osm_id
-
+            "osm_id":
+                osm_id
         }
 
-        key = item["id"]
-
-        result[key] = item
+        result[
+            item["id"]
+        ] = item
 
     return list(
         result.values()
@@ -550,7 +660,9 @@ def parse_faskes(elements):
 # LOAD PROVINCE DATA
 # ============================================================
 
-def load_province_data(code):
+def load_province_data(
+    code
+):
 
     path = province_file(
         code
@@ -561,20 +673,23 @@ def load_province_data(code):
         []
     )
 
-    unique = {}
+    if not isinstance(
+        data,
+        list
+    ):
 
-    for item in data:
-
-        key = item.get(
-            "id"
+        print(
+            "⚠️ Format province JSON "
+            "bukan list. Reset."
         )
 
-        if key:
-            unique[key] = item
+        data = []
 
-    return list(
-        unique.values()
-    )
+    # IMPORTANT:
+    # Selalu return LIST.
+    # Merge dilakukan di main() menggunakan dictionary.
+
+    return data
 
 
 # ============================================================
@@ -597,11 +712,12 @@ def save_province_data(
 
     print()
     print(
-        f"💾 {path}"
+        f"💾 File: {path}"
     )
 
     print(
-        f"📊 {len(data)} faskes"
+        f"📊 Data provinsi: "
+        f"{len(data)}"
     )
 
 
@@ -618,19 +734,29 @@ def rebuild_master():
 
     database = {}
 
-    for code, name in PROVINCES:
+    for code, province_name in PROVINCES:
 
         path = province_file(
             code
         )
 
-        if not os.path.exists(path):
+        if not os.path.exists(
+            path
+        ):
+
             continue
 
         data = load_json(
             path,
             []
         )
+
+        if not isinstance(
+            data,
+            list
+        ):
+
+            continue
 
         for item in data:
 
@@ -640,7 +766,9 @@ def rebuild_master():
 
             if key:
 
-                database[key] = item
+                database[
+                    key
+                ] = item
 
     final_data = list(
         database.values()
@@ -648,9 +776,20 @@ def rebuild_master():
 
     final_data.sort(
         key=lambda x: (
-            x.get("provinsi", ""),
-            x.get("kota", ""),
-            x.get("nama", "")
+            x.get(
+                "provinsi",
+                ""
+            ),
+
+            x.get(
+                "kota",
+                ""
+            ),
+
+            x.get(
+                "nama",
+                ""
+            )
         )
     )
 
@@ -659,8 +798,9 @@ def rebuild_master():
         final_data
     )
 
+    print()
     print(
-        f"📊 Total master: "
+        f"📊 Total database: "
         f"{len(final_data)}"
     )
 
@@ -672,9 +812,21 @@ def rebuild_master():
 def main():
 
     print()
-    print("=" * 60)
-    print("🇮🇩 CARI FASKES ID - INCREMENTAL SCRAPER")
-    print("=" * 60)
+    print(
+        "=" * 60
+    )
+
+    print(
+        "🇮🇩 CARI FASKES ID"
+    )
+
+    print(
+        "INCREMENTAL SCRAPER"
+    )
+
+    print(
+        "=" * 60
+    )
 
     progress = load_progress()
 
@@ -684,23 +836,31 @@ def main():
     )
 
     # --------------------------------------------------------
-    # Cari provinsi aktif
+    # ALL PROVINCES DONE
     # --------------------------------------------------------
 
-    if province_index >= len(PROVINCES):
+    if province_index >= len(
+        PROVINCES
+    ):
 
         print()
         print(
-            "🎉 Semua provinsi selesai."
+            "🎉 Semua provinsi sudah selesai."
         )
 
         rebuild_master()
 
         return
 
-    province_code, province_name = PROVINCES[
-        province_index
-    ]
+    # --------------------------------------------------------
+    # CURRENT PROVINCE
+    # --------------------------------------------------------
+
+    province_code, province_name = (
+        PROVINCES[
+            province_index
+        ]
+    )
 
     print()
     print(
@@ -715,15 +875,24 @@ def main():
     )
 
     # --------------------------------------------------------
-    # Area list
+    # LOAD PROVINCE STATE
     # --------------------------------------------------------
 
-    province_state = progress[
-        "areas"
-    ].get(
-        province_code,
-        {}
+    province_state = (
+        progress
+        .setdefault(
+            "areas",
+            {}
+        )
+        .setdefault(
+            province_code,
+            {}
+        )
     )
+
+    # --------------------------------------------------------
+    # GET AREA LIST
+    # --------------------------------------------------------
 
     areas = province_state.get(
         "list"
@@ -733,7 +902,8 @@ def main():
 
         print()
         print(
-            "📡 Mengambil daftar kab/kota..."
+            "📡 Mengambil daftar "
+            "kabupaten/kota..."
         )
 
         areas = get_areas(
@@ -743,46 +913,62 @@ def main():
         if areas is None:
 
             print(
-                "❌ Gagal mengambil daftar "
-                "kab/kota."
+                "❌ Gagal mendapatkan "
+                "daftar kab/kota."
+            )
+
+            save_progress(
+                progress
             )
 
             sys.exit(1)
 
-        province_state = {
-            "list": areas,
-            "index": 0
-        }
+        province_state[
+            "list"
+        ] = areas
 
-        progress[
-            "areas"
-        ][province_code] = province_state
+        province_state[
+            "index"
+        ] = 0
+
+        province_state[
+            "completed"
+        ] = []
 
         save_progress(
             progress
         )
+
+    # --------------------------------------------------------
+    # CURRENT AREA INDEX
+    # --------------------------------------------------------
 
     area_index = province_state.get(
         "index",
         0
     )
 
+    completed = province_state.get(
+        "completed",
+        []
+    )
+
     # --------------------------------------------------------
-    # Semua area provinsi selesai
+    # PROVINCE FINISHED
     # --------------------------------------------------------
 
-    if area_index >= len(areas):
+    if area_index >= len(
+        areas
+    ):
 
         print()
         print(
             f"🎉 {province_name} selesai."
         )
 
-        province_index += 1
-
         progress[
             "province_index"
-        ] = province_index
+        ] = province_index + 1
 
         save_progress(
             progress
@@ -793,12 +979,46 @@ def main():
         return
 
     # --------------------------------------------------------
-    # Process MAX areas
+    # LOAD EXISTING PROVINCE DATA
     # --------------------------------------------------------
 
     province_data = load_province_data(
         province_code
     )
+
+    # --------------------------------------------------------
+    # CONVERT LIST -> DICT
+    #
+    # Ini yang memperbaiki error:
+    #
+    # TypeError:
+    # list indices must be integers...
+    # --------------------------------------------------------
+
+    province_data_dict = {}
+
+    for item in province_data:
+
+        if not isinstance(
+            item,
+            dict
+        ):
+
+            continue
+
+        item_id = item.get(
+            "id"
+        )
+
+        if item_id:
+
+            province_data_dict[
+                item_id
+            ] = item
+
+    # --------------------------------------------------------
+    # PROCESS BATCH
+    # --------------------------------------------------------
 
     processed = 0
 
@@ -820,108 +1040,126 @@ def main():
         ]
 
         print()
-        print("-" * 60)
+        print(
+            "-" * 60
+        )
 
         print(
             f"🏙️ {area_name}"
         )
 
         print(
-            f"📌 {area_index + 1}/"
+            f"📌 Area: "
+            f"{area_index + 1}/"
             f"{len(areas)}"
         )
 
         # ----------------------------------------------------
-        # Check if this area was already completed
+        # ALREADY COMPLETED
         # ----------------------------------------------------
-
-        completed = province_state.get(
-            "completed",
-            []
-        )
 
         if area_id in completed:
 
             print(
-                "⏭️ Sudah selesai, skip."
+                "⏭️ Sudah selesai. Skip."
             )
 
             area_index += 1
+
             processed += 1
+
             continue
 
         # ----------------------------------------------------
-        # Fetch
+        # FETCH
         # ----------------------------------------------------
 
         data = fetch_area_faskes(
             area_id
         )
 
+        # ----------------------------------------------------
+        # FAILED
+        # ----------------------------------------------------
+
         if data is None:
 
             print()
             print(
-                "⚠️ Area gagal."
+                "❌ Gagal mengambil area."
             )
 
             print(
-                "➡️ Progress disimpan."
+                "💾 Progress tetap disimpan."
             )
 
             province_state[
                 "index"
             ] = area_index
 
+            province_state[
+                "completed"
+            ] = completed
+
             progress[
                 "areas"
-            ][province_code] = province_state
+            ][province_code] = (
+                province_state
+            )
 
             save_progress(
                 progress
             )
 
-            # Jangan exit error setelah ada progress.
-            # GitHub tetap harus commit progress/data.
-
+            # Jangan lanjut ke area berikutnya
             break
 
+        # ----------------------------------------------------
+        # SUCCESS
+        # ----------------------------------------------------
+
+        print()
         print(
             f"✅ Ditemukan "
             f"{len(data)} faskes"
         )
 
         # ----------------------------------------------------
-        # Merge
+        # MERGE
         # ----------------------------------------------------
 
         for item in data:
 
-            province_data[
-                item["id"]
-            ] = item
+            item_id = item.get(
+                "id"
+            )
+
+            if item_id:
+
+                province_data_dict[
+                    item_id
+                ] = item
 
         # ----------------------------------------------------
-        # SAVE AFTER EVERY AREA
+        # CONVERT DICT -> LIST
         # ----------------------------------------------------
 
-        province_data_list = list(
-            province_data.values()
+        province_data = list(
+            province_data_dict.values()
         )
+
+        # ----------------------------------------------------
+        # SAVE IMMEDIATELY
+        # ----------------------------------------------------
 
         save_province_data(
             province_code,
-            province_data_list
+            province_data
         )
 
         # ----------------------------------------------------
-        # Mark completed
+        # MARK COMPLETED
         # ----------------------------------------------------
-
-        completed = province_state.setdefault(
-            "completed",
-            []
-        )
 
         if area_id not in completed:
 
@@ -931,25 +1169,39 @@ def main():
 
         area_index += 1
 
+        processed += 1
+
         province_state[
             "index"
         ] = area_index
 
+        province_state[
+            "completed"
+        ] = completed
+
         progress[
             "areas"
-        ][province_code] = province_state
+        ][province_code] = (
+            province_state
+        )
 
         save_progress(
             progress
         )
 
-        processed += 1
+        print(
+            f"💾 Progress: "
+            f"{area_index}/"
+            f"{len(areas)}"
+        )
 
     # --------------------------------------------------------
-    # Province finished after batch
+    # CHECK PROVINCE COMPLETION
     # --------------------------------------------------------
 
-    if area_index >= len(areas):
+    if area_index >= len(
+        areas
+    ):
 
         print()
         print(
@@ -966,17 +1218,27 @@ def main():
         )
 
     # --------------------------------------------------------
-    # Rebuild master
+    # REBUILD MASTER
     # --------------------------------------------------------
 
     rebuild_master()
 
+    # --------------------------------------------------------
+    # SUMMARY
+    # --------------------------------------------------------
+
     print()
-    print("=" * 60)
+    print(
+        "=" * 60
+    )
 
     print(
-        f"✅ Batch selesai: "
-        f"{processed} area"
+        f"✅ Batch selesai"
+    )
+
+    print(
+        f"📊 Area diproses: "
+        f"{processed}"
     )
 
     print(
@@ -985,14 +1247,24 @@ def main():
     )
 
     print(
-        f"📊 Area berikutnya: "
+        f"📌 Posisi berikutnya: "
         f"{area_index + 1}/"
         f"{len(areas)}"
     )
 
-    print("=" * 60)
+    print(
+        f"📊 Faskes provinsi: "
+        f"{len(province_data)}"
+    )
 
+    print(
+        "=" * 60
+    )
+
+
+# ============================================================
+# RUN
+# ============================================================
 
 if __name__ == "__main__":
     main()
-
