@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "lat": -6.175392,
+    "lon": 106.827153,
+    "tags": {
+      "name": "Puskesmas Gambir",
+      "amenity": "clinic"
+    }
+  },
+  {
+    "id": 2,
+    "lat": -6.2088,
+    "lon": 106.8456,
+    "tags": {
+      "name": "RSUP Nasional Cipto Mangunkusumo",
+      "healthcare": "hospital"
+    }
+  }
+]
