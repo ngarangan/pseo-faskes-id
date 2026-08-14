@@ -1,0 +1,110 @@
+{
+  "province_index": 0,
+  "areas": {
+    "ID-AC": {
+      "list": [
+        {
+          "osm_id": "8912350",
+          "name": "Aceh Barat"
+        },
+        {
+          "osm_id": "8912352",
+          "name": "Aceh Barat Daya"
+        },
+        {
+          "osm_id": "8930394",
+          "name": "Aceh Besar"
+        },
+        {
+          "osm_id": "8912351",
+          "name": "Aceh Jaya"
+        },
+        {
+          "osm_id": "8922306",
+          "name": "Aceh Selatan"
+        },
+        {
+          "osm_id": "8922305",
+          "name": "Aceh Singkil"
+        },
+        {
+          "osm_id": "8922310",
+          "name": "Aceh Tamiang"
+        },
+        {
+          "osm_id": "8931154",
+          "name": "Aceh Tengah"
+        },
+        {
+          "osm_id": "8922308",
+          "name": "Aceh Tenggara"
+        },
+        {
+          "osm_id": "8931988",
+          "name": "Aceh Timur"
+        },
+        {
+          "osm_id": "4559902",
+          "name": "Aceh Utara"
+        },
+        {
+          "osm_id": "5978331",
+          "name": "Banda Aceh"
+        },
+        {
+          "osm_id": "8931139",
+          "name": "Bener Meriah"
+        },
+        {
+          "osm_id": "5474497",
+          "name": "Bireuen"
+        },
+        {
+          "osm_id": "8922309",
+          "name": "Gayo Lues"
+        },
+        {
+          "osm_id": "8922311",
+          "name": "Langsa"
+        },
+        {
+          "osm_id": "4126220",
+          "name": "Lhokseumawe"
+        },
+        {
+          "osm_id": "8912353",
+          "name": "Nagan Raya"
+        },
+        {
+          "osm_id": "8931187",
+          "name": "Pidie"
+        },
+        {
+          "osm_id": "8931186",
+          "name": "Pidie Jaya"
+        },
+        {
+          "osm_id": "9020791",
+          "name": "Sabang"
+        },
+        {
+          "osm_id": "8932307",
+          "name": "Simeulue"
+        },
+        {
+          "osm_id": "8922307",
+          "name": "Subulussalam"
+        }
+      ],
+      "index": 5,
+      "completed": [
+        "8912350",
+        "8912352",
+        "8930394",
+        "8912351",
+        "8922306"
+      ]
+    }
+  },
+  "last_run": "2026-08-14T09:00:46.653077Z"
+}
