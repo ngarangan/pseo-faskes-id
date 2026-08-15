@@ -38,7 +38,7 @@ MASTER_FILE = os.path.join(
 )
 
 # Maksimal kabupaten/kota setiap GitHub Actions
-MAX_AREAS_PER_RUN = 5
+MAX_AREAS_PER_RUN = 20
 
 # Timeout per request
 REQUEST_TIMEOUT = 120
