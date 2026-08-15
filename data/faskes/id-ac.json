@@ -3517,7 +3517,7 @@
     "kecamatan": "",
     "provinsi": "",
     "alamat": "jl.pro.A.ibrahim",
-    "telepon": "085277441453",
+    "telepon": "+62 852-7744-1453",
     "website": "http://basri4705@gmail.com",
     "latitude": 5.3794992,
     "longitude": 95.9584079,
@@ -3699,8 +3699,8 @@
     "alamat": "",
     "telepon": "",
     "website": "",
-    "latitude": 5.2497294,
-    "longitude": 95.9420073,
+    "latitude": 5.2497067,
+    "longitude": 95.94201,
     "osm_type": "way",
     "osm_id": 1232793997
   },
@@ -3838,5 +3838,20 @@
     "longitude": 98.0104437,
     "osm_type": "way",
     "osm_id": 458231594
+  },
+  {
+    "id": "osm-node-14089845501",
+    "nama": "Puskesdes Krueng Juli Barat",
+    "tipe": "Klinik",
+    "kota": "Kabupaten Bireuen",
+    "kecamatan": "Krueng Juli Barat",
+    "provinsi": "Aceh",
+    "alamat": "",
+    "telepon": "",
+    "website": "",
+    "latitude": 5.23069,
+    "longitude": 96.695899,
+    "osm_type": "node",
+    "osm_id": 14089845501
   }
 ]
