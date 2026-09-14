@@ -3517,7 +3517,7 @@
     "kecamatan": "",
     "provinsi": "",
     "alamat": "jl.pro.A.ibrahim",
-    "telepon": "085277441453",
+    "telepon": "+62 852-7744-1453",
     "website": "http://basri4705@gmail.com",
     "latitude": 5.3794992,
     "longitude": 95.9584079,
@@ -3699,8 +3699,8 @@
     "alamat": "",
     "telepon": "",
     "website": "",
-    "latitude": 5.2497294,
-    "longitude": 95.9420073,
+    "latitude": 5.2497067,
+    "longitude": 95.94201,
     "osm_type": "way",
     "osm_id": 1232793997
   },
@@ -3782,7 +3782,7 @@
   {
     "id": "osm-node-2918152804",
     "nama": "Klinik Mutia Medika",
-    "tipe": "Rumah Sakit",
+    "tipe": "Klinik",
     "kota": "Kota Subulussalam",
     "kecamatan": "",
     "provinsi": "",
@@ -3797,7 +3797,7 @@
   {
     "id": "osm-node-2919713786",
     "nama": "Klinik Bidan Khairuna",
-    "tipe": "Rumah Sakit",
+    "tipe": "Klinik",
     "kota": "",
     "kecamatan": "",
     "provinsi": "",
@@ -3853,5 +3853,20 @@
     "longitude": 96.695899,
     "osm_type": "node",
     "osm_id": 14089845501
+  },
+  {
+    "id": "osm-way-1558782539",
+    "nama": "RSUD Kota Subulussalam",
+    "tipe": "Rumah Sakit",
+    "kota": "",
+    "kecamatan": "",
+    "provinsi": "",
+    "alamat": "",
+    "telepon": "",
+    "website": "",
+    "latitude": 2.6496007,
+    "longitude": 97.9889012,
+    "osm_type": "way",
+    "osm_id": 1558782539
   }
 ]
