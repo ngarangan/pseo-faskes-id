@@ -3782,7 +3782,7 @@
   {
     "id": "osm-node-2918152804",
     "nama": "Klinik Mutia Medika",
-    "tipe": "Klinik",
+    "tipe": "Rumah Sakit",
     "kota": "Kota Subulussalam",
     "kecamatan": "",
     "provinsi": "",
@@ -3797,7 +3797,7 @@
   {
     "id": "osm-node-2919713786",
     "nama": "Klinik Bidan Khairuna",
-    "tipe": "Klinik",
+    "tipe": "Rumah Sakit",
     "kota": "",
     "kecamatan": "",
     "provinsi": "",
